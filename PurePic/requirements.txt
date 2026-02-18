@@ -1,0 +1,3 @@
+# Dependencies will be added later
+Pillow
+opencv-python
