@@ -1,83 +1,24 @@
-"""
-PUREPIC — SUBJECT INTELLIGENCE
-Stable interface version
-"""
-
 import cv2
 import numpy as np
-import rawpy
-import os
+from src.quality.image_loader import load_preview
 
 
-# -------------------------------------------------------------
-# IMAGE LOADER (RAW + JPG)
-# -------------------------------------------------------------
-def load_image_any(path):
+def subject_intelligence(image_source):
 
-    ext = os.path.splitext(path)[1].lower()
-
-    # RAW formats
-    if ext in [".cr2", ".nef", ".arw", ".dng"]:
-        try:
-            with rawpy.imread(path) as raw:
-                rgb = raw.postprocess(
-                    use_camera_wb=True,
-                    no_auto_bright=True,
-                    output_bps=8
-                )
-                return cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
-        except Exception:
-            return None
-
-    return cv2.imread(path)
-
-
-# -------------------------------------------------------------
-# BASIC SUBJECT ESTIMATION
-# (lightweight — no new AI added)
-# -------------------------------------------------------------
-def subject_score(image_path):
-    """
-    Returns numeric subject strength estimate.
-    Higher = stronger subject presence.
-    """
-
-    img = load_image_any(image_path)
+    img = load_preview(image_source)
     if img is None:
-        return 10.0
+        return 0.0, False
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # Edge density heuristic
-    edges = cv2.Canny(gray, 60, 120)
-    edge_ratio = np.sum(edges > 0) / edges.size
+    edges = cv2.Canny(gray, 80, 160)
 
-    # Normalize into usable range
-    score = edge_ratio * 100
+    edge_density = np.mean(edges > 0)
 
-    # Clamp
-    score = max(5.0, min(score, 60.0))
+    h, w = gray.shape
+    center = edges[h//4:3*h//4, w//4:3*w//4]
+    center_density = np.mean(center > 0)
 
-    return float(score)
+    score = (center_density * 0.7 + edge_density * 0.3) * 100
 
-
-# -------------------------------------------------------------
-# PUREPIC PIPELINE WRAPPER (CRITICAL)
-# -------------------------------------------------------------
-def subject_intelligence(image_path):
-    """
-    FINAL API used by final_quality.py
-
-    ALWAYS returns:
-        (subject_score_value, strong_subject_bool)
-    """
-
-    score = subject_score(image_path)
-
-    # ensure python float (avoid numpy unpack errors)
-    score = float(score)
-
-    # Human-like strong subject decision
-    strong_subject = score >= 12.0
-
-    return score, strong_subject
+    return float(score), score > 15

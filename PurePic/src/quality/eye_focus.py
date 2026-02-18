@@ -1,51 +1,38 @@
 import cv2
 import numpy as np
-from src.quality.sharpness import load_preview_raw
+from src.quality.image_loader import load_preview
 
 
 # -------------------------------------------------
-# LOAD IMAGE
+# EYE / FOCUS REGION DETECTION
 # -------------------------------------------------
-def load_img(path):
-    return load_preview_raw(path)
+def detect_eye_focus(image_source):
+    """
+    Estimates whether viewer attention area is sharp.
+    Works for portraits, wildlife, events.
+    Returns score (0–100).
+    """
 
-
-# -------------------------------------------------
-# LOCAL SHARPNESS MAP
-# -------------------------------------------------
-def local_sharpness(gray):
-
-    lap = cv2.Laplacian(gray, cv2.CV_64F)
-    sharp_map = np.abs(lap)
-
-    return sharp_map
-
-
-# -------------------------------------------------
-# EYE FOCUS SCORE
-# -------------------------------------------------
-def eye_focus_score(image_path):
-
-    img = load_img(image_path)
+    img = load_preview(image_source)
     if img is None:
         return 0.0
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    sharp_map = local_sharpness(gray)
+    # global sharpness
+    lap = cv2.Laplacian(gray, cv2.CV_64F)
+    sharp_map = np.abs(lap)
 
-    h, w = gray.shape
-
-    # photographers usually place subject near center thirds
-    roi = sharp_map[h//3:2*h//3, w//3:2*w//3]
-
-    center_sharp = np.mean(roi)
-    global_sharp = np.mean(sharp_map)
-
-    # eye tends to be sharper than surroundings
-    if global_sharp == 0:
+    global_mean = np.mean(sharp_map)
+    if global_mean == 0:
         return 0.0
 
-    ratio = center_sharp / global_sharp
+    # central attention region
+    h, w = gray.shape
+    roi = sharp_map[h//3:2*h//3, w//3:2*w//3]
 
-    return float(ratio * 10)
+    focus_ratio = np.mean(roi) / global_mean
+
+    score = np.clip(focus_ratio * 40, 0, 100)
+
+    return float(score)
