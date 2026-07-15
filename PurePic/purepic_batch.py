@@ -27,7 +27,30 @@ FOLDERS = {
 
 CSV_REPORT = os.path.join(OUTPUT_ROOT, "report.csv")
 
-VALID_EXT = [".jpg", ".jpeg", ".png", ".cr2", ".nef", ".arw", ".dng"]
+VALID_EXT = [
+    # Standard Formats
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".bmp",
+    ".webp",
+    ".tif",
+    ".tiff",
+
+    # HEIC / HEIF
+    ".heic",
+    ".heif",
+
+    # RAW Formats
+    ".cr2",
+    ".cr3",
+    ".nef",
+    ".arw",
+    ".dng",
+    ".orf",
+    ".raf",
+    ".rw2"
+]
 
 
 # -------------------------------------------------
