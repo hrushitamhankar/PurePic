@@ -1,3 +1,23 @@
+"""
+=========================================================
+PurePic Advanced Mask Selector V2
+
+Decision Engine (Phase 1)
+
+Reads from the unified Analysis Engine.
+
+No AI reasoning changes yet.
+
+Only interface modernization.
+
+=========================================================
+"""
+
+
+# =========================================================
+# Utility
+# =========================================================
+
 def clamp(value):
 
     return max(
@@ -6,85 +26,188 @@ def clamp(value):
     )
 
 
+# =========================================================
+# Main Function
+# =========================================================
+
 def select_advanced_masks(
 
     analysis,
 
-    style_diff,
+    style_diff
 
-    scene_data
 ):
 
     masks = {}
 
-    # -------------------------------------------------
-    # ANALYSIS DATA
-    # -------------------------------------------------
+    # =====================================================
+    # TECHNICAL ANALYSIS
+    # =====================================================
 
-    subject_score = analysis.get(
-        "subject_score",
-        0
+    technical = analysis.get(
+
+        "technical",
+
+        {}
+
     )
 
-    brightness = analysis.get(
-        "brightness",
-        0
+    subject = analysis.get(
+
+        "subject",
+
+        {}
+
     )
 
-    contrast = analysis.get(
-        "contrast",
-        0
+    scene = analysis.get(
+
+        "scene",
+
+        {}
+
     )
 
-    sharpness = analysis.get(
+    objects = analysis.get(
+
+        "objects",
+
+        {}
+
+    )
+
+    # -----------------------------------------------------
+    # Technical
+    # -----------------------------------------------------
+
+    sharpness = technical.get(
+
         "sharpness",
+
         0
+
     )
 
-    # -------------------------------------------------
-    # STYLE DIFFERENCE
-    # -------------------------------------------------
+    brightness = technical.get(
+
+        "brightness",
+
+        0
+
+    )
+
+    contrast = technical.get(
+
+        "contrast",
+
+        0
+
+    )
+
+    # -----------------------------------------------------
+    # Subject
+    # -----------------------------------------------------
+
+    subject_score = subject.get(
+
+        "score",
+
+        0
+
+    )
+
+    strong_subject = subject.get(
+
+        "strong",
+
+        False
+
+    )
+
+    # -----------------------------------------------------
+    # Scene
+    # -----------------------------------------------------
+
+    face_detected = scene.get(
+
+        "face_detected",
+
+        False
+
+    )
+
+    light_direction = scene.get(
+
+        "light_direction",
+
+        "balanced"
+
+    )
+
+    subject_position = scene.get(
+
+        "subject_position",
+
+        "center"
+
+    )
+
+    background_complexity = scene.get(
+
+        "background_complexity",
+
+        0.5
+
+    )
+
+    # -----------------------------------------------------
+    # Objects
+    # -----------------------------------------------------
+
+    object_summary = objects.get(
+
+        "summary",
+
+        {}
+
+    )
+
+    object_count = object_summary.get(
+
+        "count",
+
+        0
+
+    )
+
+    # -----------------------------------------------------
+    # Style Difference
+    # -----------------------------------------------------
 
     warmth_diff = abs(
 
         style_diff.get(
+
             "warmth_diff",
+
             0
+
         )
+
     )
 
     saturation_diff = abs(
 
         style_diff.get(
+
             "saturation_diff",
+
             0
+
         )
+
     )
-
-    # -------------------------------------------------
-    # SCENE UNDERSTANDING
-    # -------------------------------------------------
-
-    face_detected = scene_data.get(
-        "face_detected",
-        False
-    )
-
-    light_direction = scene_data.get(
-        "light_direction",
-        "balanced"
-    )
-
-    subject_position = scene_data.get(
-        "subject_position",
-        "center"
-    )
-
-    background_complexity = scene_data.get(
-        "background_complexity",
-        0.5
-    )
-
+    
     # =================================================
     # SUBJECT MASK
     # =================================================
@@ -96,6 +219,7 @@ def select_advanced_masks(
         sharpness * 0.2 +
 
         (1 - background_complexity) * 0.2
+
     )
 
     masks["subject_mask"] = float(
@@ -118,6 +242,7 @@ def select_advanced_masks(
             brightness * 0.1 +
 
             sharpness * 0.2
+
         )
 
         masks["face_mask"] = float(
@@ -138,6 +263,7 @@ def select_advanced_masks(
         contrast * 0.2 +
 
         (1 - background_complexity) * 0.5
+
     )
 
     masks["background_mask"] = float(
@@ -158,6 +284,7 @@ def select_advanced_masks(
         brightness * 0.2 +
 
         (1 - background_complexity) * 0.3
+
     )
 
     masks["radial_mask"] = float(
@@ -176,6 +303,7 @@ def select_advanced_masks(
         contrast * 0.5 +
 
         brightness * 0.5
+
     )
 
     masks["luminance_mask"] = float(
@@ -192,6 +320,7 @@ def select_advanced_masks(
     warmth_mask = (
 
         warmth_diff / 100
+
     )
 
     masks["warmth_mask"] = float(
@@ -212,6 +341,7 @@ def select_advanced_masks(
         saturation_diff * 0.3 +
 
         brightness * 0.4
+
     )
 
     masks["linear_gradient"] = float(
@@ -220,7 +350,7 @@ def select_advanced_masks(
             3
         )
     )
-
+    
     # =================================================
     # LIGHT DIRECTION MASKS
     # =================================================
@@ -242,6 +372,7 @@ def select_advanced_masks(
         isolation_score = (
 
             1 - background_complexity
+
         )
 
         masks["subject_isolation_mask"] = float(
@@ -262,6 +393,7 @@ def select_advanced_masks(
         contrast * 0.3 +
 
         (1 - background_complexity) * 0.3
+
     )
 
     masks["cinematic_mask"] = float(
@@ -270,6 +402,28 @@ def select_advanced_masks(
             3
         )
     )
+
+    # =================================================
+    # FUTURE FEATURES (Reserved)
+    # =================================================
+    #
+    # These variables are intentionally extracted from
+    # the new Analysis Engine but are not used yet.
+    #
+    # Phase 2 (Decision Engine V3) will utilize:
+    #
+    #   • strong_subject
+    #   • object_count
+    #   • subject_position
+    #   • scene_type
+    #   • environment
+    #   • camera_distance
+    #   • editing_priority
+    #
+    # Keeping them available now avoids another API
+    # change later.
+    #
+    # =================================================
 
     # =================================================
     # SORT MASKS
@@ -284,7 +438,9 @@ def select_advanced_masks(
             key=lambda x: x[1],
 
             reverse=True
+
         )
+
     )
 
     return sorted_masks

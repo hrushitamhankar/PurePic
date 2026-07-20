@@ -1,7 +1,13 @@
 import cv2
 import numpy as np
 
-from src.analysis.analyzer import analyze_image
+from src.analysis.analyzer import (
+    analyze_image,
+    get_brightness,
+    get_contrast,
+    get_sharpness,
+    get_subject_score,
+)
 
 
 # -------------------------------------------------
@@ -15,12 +21,10 @@ def compute_color_stats(image):
     h, s, v = cv2.split(hsv)
 
     avg_saturation = np.mean(s) / 255.0
-
     avg_brightness = np.mean(v) / 255.0
 
     # ---------------------------------------------
     # Warmth Approximation
-    # Higher red tones = warmer image
     # ---------------------------------------------
 
     b, g, r = cv2.split(image)
@@ -51,7 +55,6 @@ def compare_styles(reference_image, target_image):
     # ---------------------------------------------
 
     ref_analysis = analyze_image(reference_image)
-
     tgt_analysis = analyze_image(target_image)
 
     # ---------------------------------------------
@@ -59,7 +62,6 @@ def compare_styles(reference_image, target_image):
     # ---------------------------------------------
 
     ref_color = compute_color_stats(reference_image)
-
     tgt_color = compute_color_stats(target_image)
 
     # ---------------------------------------------
@@ -70,14 +72,13 @@ def compare_styles(reference_image, target_image):
 
         # -----------------------------------------
         # Brightness Difference
-        # + value → target should become brighter
         # -----------------------------------------
 
         "brightness_diff":
 
             round(
-                ref_analysis["brightness"] -
-                tgt_analysis["brightness"],
+                get_brightness(ref_analysis) -
+                get_brightness(tgt_analysis),
                 3
             ),
 
@@ -88,8 +89,8 @@ def compare_styles(reference_image, target_image):
         "contrast_diff":
 
             round(
-                ref_analysis["contrast"] -
-                tgt_analysis["contrast"],
+                get_contrast(ref_analysis) -
+                get_contrast(tgt_analysis),
                 3
             ),
 
@@ -100,20 +101,20 @@ def compare_styles(reference_image, target_image):
         "sharpness_diff":
 
             round(
-                ref_analysis["sharpness"] -
-                tgt_analysis["sharpness"],
+                get_sharpness(ref_analysis) -
+                get_sharpness(tgt_analysis),
                 3
             ),
 
         # -----------------------------------------
-        # Subject Emphasis Difference
+        # Subject Difference
         # -----------------------------------------
 
         "subject_diff":
 
             round(
-                ref_analysis["subject_score"] -
-                tgt_analysis["subject_score"],
+                get_subject_score(ref_analysis) -
+                get_subject_score(tgt_analysis),
                 3
             ),
 

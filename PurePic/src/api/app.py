@@ -1,5 +1,46 @@
 import sys
 import os
+import traceback
+import shutil
+import uuid
+import cv2
+import numpy as np
+from dataclasses import is_dataclass, asdict
+
+# -------------------------------------------------
+# JSON Safe Converter
+# -------------------------------------------------
+
+def make_json_safe(obj):
+
+    if is_dataclass(obj):
+        return make_json_safe(asdict(obj))
+
+    if isinstance(obj, dict):
+        return {
+            str(k): make_json_safe(v)
+            for k, v in obj.items()
+        }
+
+    if isinstance(obj, (list, tuple)):
+        return [
+            make_json_safe(v)
+            for v in obj
+        ]
+
+    if isinstance(obj, np.integer):
+        return int(obj)
+
+    if isinstance(obj, np.floating):
+        return float(obj)
+
+    if isinstance(obj, np.bool_):
+        return bool(obj)
+
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+
+    return obj
 
 # -------------------------------------------------
 # Add src/ to Python Path
@@ -160,6 +201,21 @@ async def reference_masking(
 
             reference_image_path=reference_path
         )
+        analysis = results["analysis"].copy()
+
+        # Replace raw DetectedObject list with JSON-safe version
+        if "objects" in analysis:
+
+            object_section = analysis["objects"]
+
+            if isinstance(object_section, dict):
+
+                analysis["objects"] = {
+
+                "summary": object_section.get("summary", {}),
+
+                "json": object_section.get("json", {})
+            }
 
         # =================================================
         # SAVE OVERLAY OUTPUT
@@ -189,81 +245,56 @@ async def reference_masking(
         # =================================================
         # BUILD RESPONSE
         # =================================================
-
         response = {
 
-            # ---------------------------------------------
-            # Analysis
-            # ---------------------------------------------
+    "analysis": analysis,
 
-            "analysis":
+    "scene_data": results["scene_data"],
 
-                results["analysis"],
+    "style_diff": (
+        results["style_diff"]["style_diff"]
+        if isinstance(results["style_diff"], dict)
+        and "style_diff" in results["style_diff"]
+        else results["style_diff"]
+    ),
 
-            # ---------------------------------------------
-            # Scene Understanding
-            # ---------------------------------------------
+    "mask_scores": {
+        k: float(v)
+        for k, v in results["mask_scores"].items()
+    },
 
-            "scene_data":
-
-                results["scene_data"],
-
-            # ---------------------------------------------
-            # Style Differences
-            # ---------------------------------------------
-
-            "style_diff":
-
-                results["style_diff"],
-
-            # ---------------------------------------------
-            # Mask Scores
-            # ---------------------------------------------
-
-            "mask_scores":
-
-                results["mask_scores"],
-
-            # ---------------------------------------------
-            # Top Masks
-            # ---------------------------------------------
-
-            "top_masks":
-
-                [
-
-                    {
-                        "mask": name,
-
-                        "score": float(score)
-                    }
-
-                    for name, score in
-                    results["top_masks"]
-                ],
-
-            # ---------------------------------------------
-            # Structured Masks
-            # ---------------------------------------------
-
-            "structured_masks":
-
-                results["structured_masks"],
-
-            # ---------------------------------------------
-            # Overlay Preview URL
-            # ---------------------------------------------
-
-            "overlay_url":
-
-                f"http://127.0.0.1:8000/static/{visualization_filename}"
+    "top_masks": [
+        {
+            "mask": name,
+            "score": float(score)
         }
+        for name, score in results["top_masks"]
+    ],
+
+    "structured_masks": results["structured_masks"],
+
+    "overlay_url": f"http://127.0.0.1:8000/static/{visualization_filename}"
+}
+        
+
+        response = make_json_safe(response)
 
         return JSONResponse(
-            content=response
+        content=response
         )
 
     except Exception as e:
+
+        print("\n" + "=" * 80)
+        print("PurePic Pipeline Exception")
+        print("=" * 80)
+
+        traceback.print_exc()
+
+        print("=" * 80)
+        print(f"Exception Type : {type(e).__name__}")
+        print(f"Exception      : {e}")
+        print("=" * 80 + "\n")
 
         return JSONResponse(
 
@@ -271,6 +302,7 @@ async def reference_masking(
 
             content={
 
-                "error": str(e)
+                "error": str(e),
+                "exception_type": type(e).__name__
             }
         )

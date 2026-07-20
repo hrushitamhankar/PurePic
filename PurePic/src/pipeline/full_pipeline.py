@@ -9,14 +9,6 @@ from analysis.analyzer import (
 )
 
 # -------------------------------------------------
-# Scene Understanding
-# -------------------------------------------------
-
-from analysis.scene_understanding import (
-    understand_scene
-)
-
-# -------------------------------------------------
 # Style Analysis
 # -------------------------------------------------
 
@@ -84,11 +76,15 @@ def run_pipeline(
     )
 
     # =================================================
-    # SCENE UNDERSTANDING
+    # SCENE DATA
+    #
+    # Analyzer V2 already performs scene understanding.
+    # Keep a local alias for compatibility.
     # =================================================
 
-    scene_data = understand_scene(
-        target_image
+    scene_data = analysis.get(
+        "scene",
+        {}
     )
 
     # =================================================
@@ -114,9 +110,8 @@ def run_pipeline(
 
         analysis,
 
-        style_diff,
+        style_diff
 
-        scene_data
     )
 
     # =================================================
@@ -142,6 +137,7 @@ def run_pipeline(
         top_masks,
 
         scene_data
+
     )
 
     # =================================================
@@ -149,8 +145,11 @@ def run_pipeline(
     # =================================================
 
     visualization = render_overlays(
+
         target_image,
+
         structured_masks
+
     )
 
     # =================================================
@@ -160,58 +159,45 @@ def run_pipeline(
     return {
 
         # ---------------------------------------------
-        # Analysis
+        # Complete Analysis
         # ---------------------------------------------
 
-        "analysis":
-
-            analysis,
+        "analysis": analysis,
 
         # ---------------------------------------------
-        # Scene Understanding
+        # Scene (Compatibility)
         # ---------------------------------------------
 
-        "scene_data":
-
-            scene_data,
+        "scene_data": scene_data,
 
         # ---------------------------------------------
         # Style Difference
         # ---------------------------------------------
 
-        "style_diff":
-
-            style_diff,
+        "style_diff": style_diff,
 
         # ---------------------------------------------
         # Raw Mask Scores
         # ---------------------------------------------
 
-        "mask_scores":
-
-            mask_scores,
+        "mask_scores": mask_scores,
 
         # ---------------------------------------------
         # Top Masks
         # ---------------------------------------------
 
-        "top_masks":
-
-            top_masks,
+        "top_masks": top_masks,
 
         # ---------------------------------------------
         # Structured Masks
         # ---------------------------------------------
 
-        "structured_masks":
-
-            structured_masks,
+        "structured_masks": structured_masks,
 
         # ---------------------------------------------
         # Visualization
         # ---------------------------------------------
 
-        "visualization":
+        "visualization": visualization
 
-            visualization
     }
