@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Disallow: /dashboard
+Disallow: /login
+Disallow: /register
+Disallow: /api/
+
+Sitemap: https://purepic.app/sitemap.xml
