@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 
+SUBJECT_FEATHER_KERNEL = (31, 31)
+BACKGROUND_FEATHER_KERNEL = (41, 41)
+
 # -------------------------------------------------
 # Overlay Utility
 # -------------------------------------------------
@@ -13,7 +16,7 @@ def blend_overlay(
 
     color,
 
-    alpha=0.35
+    alpha=0.12
 ):
 
     overlay = image.copy()
@@ -321,6 +324,109 @@ def render_overlays(
             )
 
         # =================================================
+        # SEGMENTATION SUBJECT
+        # =================================================
+
+        elif region_type == "segmentation":
+
+            binary_mask = region_data.get("binary_mask")
+
+            if binary_mask is None:
+
+                m = radial_subject_mask(
+                    image
+                )
+
+                output = blend_overlay(
+
+                    output,
+
+                    m,
+
+                    color,
+
+                    opacity
+                )
+
+            else:
+
+                if binary_mask.dtype != np.float32:
+                    binary_mask = binary_mask.astype(np.float32)
+
+                original_h, original_w = binary_mask.shape[:2]
+
+                # Resize mask if needed
+                if binary_mask.shape[:2] != image.shape[:2]:
+
+                    binary_mask = cv2.resize(
+                        binary_mask,
+                        (image.shape[1], image.shape[0]),
+                        interpolation=cv2.INTER_NEAREST
+                    )
+
+                display_mask = cv2.GaussianBlur(
+                    binary_mask,
+                    SUBJECT_FEATHER_KERNEL,
+                    0
+                )
+
+                output = blend_overlay(
+                    output,
+                    display_mask,
+                    color,
+                    opacity
+                )
+
+                # ---------------------------------------
+                # Generate contour from resized mask
+                # ---------------------------------------
+
+                display_mask_uint8 = (display_mask > 0.5).astype(np.uint8)
+
+                contours, _ = cv2.findContours(
+
+                    display_mask_uint8,
+
+                    cv2.RETR_EXTERNAL,
+
+                    cv2.CHAIN_APPROX_SIMPLE
+                )
+
+                if contours:
+
+                    largest = max(
+                        contours,
+                        key=cv2.contourArea
+                    )
+
+                    epsilon = 0.002 * cv2.arcLength(largest, True)
+                    largest = cv2.approxPolyDP(
+                        largest,
+                        epsilon,
+                        True
+                    )
+
+                    thickness = max(
+                        1,
+                        image.shape[0] // 1800
+                    )
+
+                    cv2.drawContours(
+
+                        output,
+
+                        [largest],
+
+                        -1,
+
+                        (255,255,255),
+
+                        thickness,
+
+                        cv2.LINE_AA
+                    )
+
+        # =================================================
         # RADIAL SUBJECT
         # =================================================
 
@@ -335,6 +441,45 @@ def render_overlays(
                 output,
 
                 m,
+
+                color,
+
+                opacity
+            )
+
+        # =================================================
+        # INVERSE SUBJECT
+        # =================================================
+
+        elif region_type == "inverse_subject":
+
+            binary_mask = region_data.get("binary_mask")
+
+            if binary_mask is None:
+                background_mask = radial_subject_mask(image)
+            else:
+                if binary_mask.dtype != np.float32:
+                    binary_mask = binary_mask.astype(np.float32)
+
+                # Resize mask to match the original image
+                if binary_mask.shape[:2] != image.shape[:2]:
+                    binary_mask = cv2.resize(
+                        binary_mask,
+                        (image.shape[1], image.shape[0]),  # (width, height)
+                        interpolation=cv2.INTER_NEAREST
+                    )
+
+                display_mask = cv2.GaussianBlur(
+                    binary_mask,
+                    SUBJECT_FEATHER_KERNEL,
+                    0
+                )
+
+            output = blend_overlay(
+
+                output,
+
+                display_mask,
 
                 color,
 

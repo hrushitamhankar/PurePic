@@ -10,7 +10,9 @@ def build_masks(
 
     top_masks,
 
-    scene_data
+    scene_data,
+    
+    analysis
 ):
 
     masks = []
@@ -26,6 +28,38 @@ def build_masks(
     light_direction = scene_data.get(
         "light_direction"
     )
+
+    # -------------------------------------------------
+    # Primary Subject
+    # -------------------------------------------------
+
+    detected_objects = []
+
+    if isinstance(analysis, dict):
+
+        objects_payload = analysis.get(
+            "objects",
+            []
+        )
+
+        if isinstance(objects_payload, dict):
+            detected_objects = objects_payload.get(
+                "objects",
+                []
+            )
+        elif isinstance(objects_payload, (list, tuple)):
+            detected_objects = list(objects_payload)
+
+    primary_subject = None
+
+    for obj in detected_objects:
+
+        if getattr(obj, "is_primary_subject", False):
+            primary_subject = obj
+            break
+
+    if primary_subject is None and detected_objects:
+        primary_subject = detected_objects[0]
 
     # -------------------------------------------------
     # Build Masks
@@ -142,6 +176,31 @@ def build_masks(
 
         elif mask_name == "subject_mask":
 
+            subject_region_type = "radial"
+            subject_region_data = {
+                "focus": "subject"
+            }
+
+            if primary_subject is not None:
+
+                binary_mask = getattr(
+                    primary_subject,
+                    "binary_mask",
+                    None
+                )
+
+                if binary_mask is not None:
+
+                    subject_region_type = "segmentation"
+                    subject_region_data = {
+                        "binary_mask": binary_mask,
+                        "contour": getattr(
+                            primary_subject,
+                            "contour",
+                            None
+                        )
+                    }
+
             masks.append(
 
                 create_mask_object(
@@ -152,12 +211,9 @@ def build_masks(
 
                     color=[255, 255, 0],
 
-                    region_type="radial",
+                    region_type=subject_region_type,
 
-                    region_data={
-
-                        "focus": "subject"
-                    },
+                    region_data=subject_region_data,
 
                     instructions=[
 
@@ -176,6 +232,29 @@ def build_masks(
 
         elif mask_name == "background_mask":
 
+            background_region_data = {
+                "focus": "background"
+            }
+
+            if primary_subject is not None:
+
+                binary_mask = getattr(
+                    primary_subject,
+                    "binary_mask",
+                    None
+                )
+
+                if binary_mask is not None:
+
+                    background_region_data = {
+                        "binary_mask": binary_mask,
+                        "contour": getattr(
+                            primary_subject,
+                            "contour",
+                            None
+                        )
+                    }
+
             masks.append(
 
                 create_mask_object(
@@ -188,10 +267,7 @@ def build_masks(
 
                     region_type="inverse_subject",
 
-                    region_data={
-
-                        "focus": "background"
-                    },
+                    region_data=background_region_data,
 
                     instructions=[
 

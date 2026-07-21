@@ -136,7 +136,9 @@ def run_pipeline(
 
         top_masks,
 
-        scene_data
+        scene_data,
+        
+        analysis
 
     )
 

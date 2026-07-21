@@ -196,13 +196,15 @@ async def reference_masking(
         # =================================================
 
         results = run_pipeline(
-
+            
             target_image_path=target_path,
 
             reference_image_path=reference_path
         )
-        analysis = results["analysis"].copy()
 
+        print(results.keys())
+        analysis = results["analysis"].copy()
+        
         # Replace raw DetectedObject list with JSON-safe version
         if "objects" in analysis:
 
