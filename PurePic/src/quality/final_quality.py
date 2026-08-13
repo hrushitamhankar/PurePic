@@ -145,18 +145,19 @@ def final_evaluation(image_path):
     else:
         label = "reject"
 
-    # ---------- DEBUG ----------
-    print("\nDEBUG ----------------")
-    print("technical:", round(technical_score, 2))
-    print("aesthetic:", round(aesthetic_score_norm, 2))
-    print("subject:", round(subject_val, 2))
-    print("moment:", round(moment_score, 2))
-    print("eye_focus:", round(eye_focus_score, 2))
-    print("intent:", intent_type)
-    print("intent_bonus:", intent_bonus)
-    print("confidence:", round(confidence, 2))
-    print("final_score:", round(final_score, 2))
-    print("label:", label)
+    # ---------- DEBUG (suppressed in production — server redirects stdout) ----------
+    # Uncomment to debug locally:
+    # print("\nDEBUG ----------------")
+    # print("technical:", round(technical_score, 2))
+    # print("aesthetic:", round(aesthetic_score_norm, 2))
+    # print("subject:", round(subject_val, 2))
+    # print("moment:", round(moment_score, 2))
+    # print("eye_focus:", round(eye_focus_score, 2))
+    # print("intent:", intent_type)
+    # print("intent_bonus:", intent_bonus)
+    # print("confidence:", round(confidence, 2))
+    # print("final_score:", round(final_score, 2))
+    # print("label:", label)
 
     return {
         "final_label": label,

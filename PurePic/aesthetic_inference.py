@@ -30,17 +30,10 @@ def get_interpreter():
     global interpreter, input_details, output_details
 
     if interpreter is None:
-        print("\n=== LOADING AESTHETIC MODEL ===")
-        print("MODEL PATH:", MODEL_PATH)
-
         interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
         interpreter.allocate_tensors()
-
-        input_details = interpreter.get_input_details()
+        input_details  = interpreter.get_input_details()
         output_details = interpreter.get_output_details()
-
-        print("INPUT DETAILS:", input_details)
-        print("OUTPUT DETAILS:", output_details)
 
     return interpreter, input_details, output_details
 
@@ -111,7 +104,7 @@ def aesthetic_score(image_path):
     interpreter.invoke()
 
     output = interpreter.get_tensor(output_details[0]["index"])
-    print("RAW MODEL OUTPUT:", output)
+    # print("RAW MODEL OUTPUT:", output)  # suppressed in production
 
 
     # -------------------------------------------------
